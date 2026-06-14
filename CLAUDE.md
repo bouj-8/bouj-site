@@ -62,6 +62,12 @@ Toggling language re-renders immediately from the cached API response (`lastData
 
 ---
 
+## Planned features
+
+- **Gate day display toggle** (post-site, post-user-storage): let users choose between showing both readings or just one (opening / closing / auto based on time of day). Requires user preference storage to be in place first.
+
+---
+
 ## What NOT to do
 
 - Do not hardcode a location — always use the browser Geolocation API
