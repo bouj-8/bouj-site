@@ -27,11 +27,12 @@ fourth moon day twenty-nine        (English)
 
 ### Gate day
 ```
-sixth moon day thirty / seventh moon day one        (English)
-六月三十 / 七月初一                                  (Chinese)
-gate day · new moon at 12:11pm
+sixth moon day thirty · seventh moon day one        (English)
+六月三十 · 七月初一                                  (Chinese)
+gate at 12:11pm
 交朔 · 12:11pm
 ```
+Both readings render at equal weight (no muting). The divider `·` is muted.
 
 ### Leap month
 ```

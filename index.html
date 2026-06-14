@@ -49,10 +49,6 @@
       margin-bottom: 0.5em;
     }
 
-    .moon-date.gate .closing {
-      color: var(--muted);
-    }
-
     .moon-date.gate .divider {
       color: var(--muted);
       margin: 0 0.3em;
@@ -200,12 +196,12 @@
         moonEl.classList.add('gate');
         moonEl.innerHTML =
           `<span class="closing">${closingText}</span>` +
-          `<span class="divider">/</span>` +
+          `<span class="divider">·</span>` +
           `<span class="opening">${openingText}</span>`;
 
         subEl.textContent = useChinese
           ? `交朔 · ${time}`
-          : `gate day · new moon at ${time}`;
+          : `gate at ${time}`;
       } else {
         moonEl.classList.remove('gate');
         moonEl.textContent = useChinese
