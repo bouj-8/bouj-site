@@ -4,6 +4,8 @@
 
 Single-page frontend for the bouj moon calendar. Fetches lunar date from `bouj-backend` via the browser's Geolocation API and renders it in natural language.
 
+Deployed on GitHub Pages at `https://bouj-8.github.io/bouj-site/`. Every push to `main` triggers an automatic redeploy (legacy build type, no Actions workflow needed).
+
 The backend API is at `https://bouj-backend-production.up.railway.app`.
 
 ---
