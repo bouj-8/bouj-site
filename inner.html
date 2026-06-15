@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>bouj / inner</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
       --bg: #f5f5f0;
@@ -23,14 +24,10 @@
       --toggle-fg: #ccc;
     }
 
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--fg);
       font-family: Georgia, 'Times New Roman', serif;
       min-height: 100vh;
@@ -40,25 +37,25 @@
     /* ── layout ── */
 
     .page {
-      max-width: 680px;
+      max-width: 740px;
       margin: 0 auto;
-      padding: 4rem 1.5rem 6rem;
+      padding: 3rem 1.5rem 6rem;
       display: none;
     }
 
-    .page.ready {
-      display: block;
-    }
+    .page.ready { display: block; }
 
     /* ── header ── */
 
     header {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       justify-content: space-between;
       margin-bottom: 3rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--border);
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .site-name {
@@ -67,16 +64,16 @@
       text-transform: uppercase;
       color: var(--muted);
       text-decoration: none;
+      flex-shrink: 0;
     }
 
-    .site-name:hover {
-      color: var(--fg);
-    }
+    .site-name:hover { color: var(--fg); }
 
     .header-right {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
+      flex-wrap: wrap;
     }
 
     .username {
@@ -90,21 +87,109 @@
       color: var(--toggle-fg);
       border: none;
       border-radius: 2rem;
-      padding: 0.3em 0.7em;
+      padding: 0.3em 0.75em;
       font-size: 0.8rem;
       cursor: pointer;
       transition: background-color 0.3s, color 0.3s;
     }
 
-    button.small:hover {
-      opacity: 0.8;
+    button.small:hover { opacity: 0.8; }
+
+    #write-btn { display: none; }
+
+    /* ── editor ── */
+
+    .editor {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
     }
+
+    .editor.active { display: flex; }
+
+    .editor-title {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      color: var(--fg);
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+      padding: 0.4rem 0;
+      outline: none;
+    }
+
+    .editor-title::placeholder { color: var(--muted); }
+
+    .editor-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      min-height: 320px;
+    }
+
+    @media (max-width: 600px) {
+      .editor-split { grid-template-columns: 1fr; }
+    }
+
+    .editor-textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      background: var(--toggle-bg);
+      color: var(--toggle-fg);
+      border: none;
+      border-radius: 4px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding: 1rem;
+      resize: vertical;
+      outline: none;
+    }
+
+    .editor-preview {
+      min-height: 320px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow-y: auto;
+      font-size: 1rem;
+      line-height: 1.75;
+    }
+
+    .editor-preview:empty::before {
+      content: 'preview';
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    button.publish {
+      background: var(--fg);
+      color: var(--bg);
+      border: none;
+      border-radius: 2rem;
+      padding: 0.45em 1.1em;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button.publish:hover { opacity: 0.75; }
+    button.publish:disabled { opacity: 0.4; cursor: default; }
 
     /* ── posts ── */
 
-    .post {
-      margin-bottom: 3.5rem;
-    }
+    .post { margin-bottom: 3.5rem; }
 
     .post + .post {
       padding-top: 3.5rem;
@@ -116,7 +201,7 @@
       letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.5rem;
     }
 
     .post-title {
@@ -129,14 +214,62 @@
     .post-body {
       font-size: 1rem;
       line-height: 1.75;
+    }
+
+    .post-body p + p { margin-top: 1em; }
+
+    .post-body img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 1.5rem auto;
+    }
+
+    .post-body a {
       color: var(--fg);
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
-    .post-body p + p {
-      margin-top: 1em;
+    .post-body a:hover { opacity: 0.65; }
+
+    .post-body h1, .post-body h2, .post-body h3 {
+      font-weight: normal;
+      margin: 1.5em 0 0.5em;
     }
 
-    /* ── loading / error ── */
+    .post-body blockquote {
+      border-left: 2px solid var(--muted);
+      margin: 1em 0;
+      padding-left: 1em;
+      color: var(--muted);
+    }
+
+    .post-controls {
+      margin-top: 0.85rem;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      letter-spacing: 0.05em;
+    }
+
+    .ctrl-btn:hover { color: var(--fg); }
+
+    .empty {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* ── loading ── */
 
     .loading {
       position: fixed;
@@ -152,9 +285,7 @@
       transition: background-color 0.3s;
     }
 
-    .loading.hidden {
-      display: none;
-    }
+    .loading.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -166,33 +297,43 @@
       <a class="site-name" href="index.html">← bouj</a>
       <div class="header-right">
         <span class="username" id="username"></span>
+        <button class="small" id="write-btn" onclick="openEditor()">write</button>
         <button class="small" id="theme-toggle">☀ light</button>
         <button class="small" id="logout">log out</button>
       </div>
     </header>
 
-    <main id="posts">
+    <div class="editor" id="editor">
+      <input class="editor-title" id="editor-title" type="text" placeholder="title" autocomplete="off" />
+      <div class="editor-split">
+        <textarea class="editor-textarea" id="editor-body" placeholder="write in markdown…&#10;&#10;links: [text](url)&#10;images: ![](url)"></textarea>
+        <div class="editor-preview" id="editor-preview"></div>
+      </div>
+      <div class="editor-actions">
+        <button class="publish" id="publish-btn" onclick="publish()">publish</button>
+        <button class="small" onclick="closeEditor()">cancel</button>
+      </div>
+    </div>
 
-      <!-- posts go here, newest first -->
-
-      <article class="post">
-        <p class="post-date">June 15, 2026</p>
-        <h2 class="post-title">The inner workings</h2>
-        <div class="post-body">
-          <p>This is the beginning of the inner layer — a quieter place to write about what the site is, where it's going, and whatever else comes up along the way.</p>
-          <p>The moon calendar is the public face. This is the back room.</p>
-        </div>
-      </article>
-
-    </main>
+    <main id="posts-container"></main>
   </div>
 
   <script>
     const API = 'https://bouj-backend-production.up.railway.app';
 
-    const loadingEl = document.getElementById('loading');
-    const pageEl    = document.getElementById('page');
-    const usernameEl = document.getElementById('username');
+    let token    = null;
+    let username = null;
+    let editingId = null;
+    let postsCache = [];
+
+    const loadingEl   = document.getElementById('loading');
+    const pageEl      = document.getElementById('page');
+    const editorEl    = document.getElementById('editor');
+    const titleInput  = document.getElementById('editor-title');
+    const bodyInput   = document.getElementById('editor-body');
+    const previewEl   = document.getElementById('editor-preview');
+    const publishBtn  = document.getElementById('publish-btn');
+    const postsEl     = document.getElementById('posts-container');
 
     // ── theme ─────────────────────────────────────────────────────────────────
 
@@ -200,15 +341,12 @@
     const html        = document.documentElement;
 
     setTheme(localStorage.getItem('theme') || 'dark');
+    themeToggle.addEventListener('click', () => setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark'));
 
-    themeToggle.addEventListener('click', () => {
-      setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark');
-    });
-
-    function setTheme(theme) {
-      html.dataset.theme = theme;
-      themeToggle.textContent = theme === 'dark' ? '☾ dark' : '☀ light';
-      localStorage.setItem('theme', theme);
+    function setTheme(t) {
+      html.dataset.theme = t;
+      themeToggle.textContent = t === 'dark' ? '☾ dark' : '☀ light';
+      localStorage.setItem('theme', t);
     }
 
     // ── auth ──────────────────────────────────────────────────────────────────
@@ -220,26 +358,136 @@
     });
 
     async function init() {
-      const token = localStorage.getItem('bouj_token');
-      if (!token) {
+      token = localStorage.getItem('bouj_token');
+      if (!token) { window.location.href = 'index.html'; return; }
+
+      try {
+        const res = await fetch(`${API}/me`, { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        username = data.username;
+      } catch {
+        localStorage.removeItem('bouj_token');
         window.location.href = 'index.html';
         return;
       }
 
+      document.getElementById('username').textContent = username;
+      if (username === 'admin') document.getElementById('write-btn').style.display = 'inline-block';
+
+      loadingEl.classList.add('hidden');
+      pageEl.classList.add('ready');
+      await fetchPosts();
+    }
+
+    // ── posts ─────────────────────────────────────────────────────────────────
+
+    async function fetchPosts() {
       try {
-        const res = await fetch(`${API}/me`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+        const res = await fetch(`${API}/posts`, { headers: { Authorization: `Bearer ${token}` } });
+        postsCache = await res.json();
+        renderPosts(postsCache);
+      } catch {
+        postsEl.innerHTML = '<p class="empty">couldn\'t load posts.</p>';
+      }
+    }
+
+    function renderPosts(posts) {
+      if (posts.length === 0) {
+        postsEl.innerHTML = '<p class="empty">nothing here yet.</p>';
+        return;
+      }
+      postsEl.innerHTML = posts.map(post => `
+        <article class="post">
+          <p class="post-date">${formatDate(post.created_at)}${post.updated_at ? ' · edited' : ''}</p>
+          <h2 class="post-title">${escHtml(post.title)}</h2>
+          <div class="post-body">${marked.parse(post.body)}</div>
+          ${username === 'admin' ? `
+            <div class="post-controls">
+              <button class="ctrl-btn" onclick="startEdit(${post.id})">edit</button>
+              <button class="ctrl-btn" onclick="deletePost(${post.id})">delete</button>
+            </div>
+          ` : ''}
+        </article>
+      `).join('');
+    }
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── editor ────────────────────────────────────────────────────────────────
+
+    bodyInput.addEventListener('input', updatePreview);
+
+    function updatePreview() {
+      previewEl.innerHTML = bodyInput.value ? marked.parse(bodyInput.value) : '';
+    }
+
+    function openEditor() {
+      editorEl.classList.add('active');
+      postsEl.style.display = 'none';
+      titleInput.focus();
+    }
+
+    function closeEditor() {
+      editorEl.classList.remove('active');
+      postsEl.style.display = '';
+      titleInput.value = '';
+      bodyInput.value  = '';
+      previewEl.innerHTML = '';
+      editingId = null;
+      publishBtn.textContent = 'publish';
+      publishBtn.disabled = false;
+    }
+
+    function startEdit(id) {
+      const post = postsCache.find(p => p.id === id);
+      if (!post) return;
+      titleInput.value = post.title;
+      bodyInput.value  = post.body;
+      updatePreview();
+      editingId = id;
+      publishBtn.textContent = 'save changes';
+      openEditor();
+    }
+
+    async function publish() {
+      const title = titleInput.value.trim();
+      const body  = bodyInput.value.trim();
+      if (!title || !body) return;
+
+      publishBtn.disabled = true;
+      publishBtn.textContent = '…';
+
+      try {
+        const url    = editingId ? `${API}/posts/${editingId}` : `${API}/posts`;
+        const method = editingId ? 'PATCH' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title, body }),
         });
         if (!res.ok) throw new Error();
-        const { username } = await res.json();
-        usernameEl.textContent = username;
-        loadingEl.classList.add('hidden');
-        pageEl.classList.add('ready');
+        closeEditor();
+        await fetchPosts();
       } catch {
-        localStorage.removeItem('bouj_token');
-        localStorage.removeItem('bouj_username');
-        window.location.href = 'index.html';
+        publishBtn.disabled = false;
+        publishBtn.textContent = editingId ? 'save changes' : 'publish';
       }
+    }
+
+    async function deletePost(id) {
+      if (!confirm('delete this post?')) return;
+      await fetch(`${API}/posts/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchPosts();
     }
 
     init();
