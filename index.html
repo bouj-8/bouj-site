@@ -85,6 +85,68 @@
     .top-controls button:hover {
       opacity: 0.8;
     }
+
+    #moon-date {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      cursor: default;
+    }
+
+    .term-overlay {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--fg);
+      color: var(--bg);
+      font-family: 'Courier New', Courier, monospace;
+      font-size: clamp(0.9rem, 3vw, 1rem);
+      padding: 0.75rem 1.25rem;
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+
+    .term-overlay.active {
+      display: flex;
+    }
+
+    .term-prompt {
+      opacity: 0.5;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .term-input {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-family: inherit;
+      font-size: inherit;
+      flex: 1;
+      outline: none;
+      min-width: 0;
+    }
+
+    .term-hint {
+      opacity: 0.4;
+      font-size: 0.75em;
+      flex-shrink: 0;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX(8px); }
+      60%       { transform: translateX(-5px); }
+      80%       { transform: translateX(5px); }
+    }
+
+    .term-overlay.shake {
+      animation: shake 0.35s ease;
+    }
   </style>
 </head>
 <body>
@@ -97,6 +159,12 @@
     <p class="moon-date" id="moon-date">—</p>
     <p class="sub" id="sub"></p>
   </main>
+
+  <div class="term-overlay" id="term-overlay">
+    <span class="term-prompt">&gt;</span>
+    <input class="term-input" id="term-input" type="password" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    <span class="term-hint" id="term-hint">esc to close</span>
+  </div>
 
   <script>
     const API = 'https://bouj-backend-production.up.railway.app';
@@ -231,6 +299,97 @@
     }
 
     init();
+
+    // ── terminal prompt ───────────────────────────────────────────────────────
+
+    const termOverlay = document.getElementById('term-overlay');
+    const termInput   = document.getElementById('term-input');
+    const termHint    = document.getElementById('term-hint');
+
+    function openTerm() {
+      termOverlay.classList.add('active');
+      termInput.value = '';
+      termInput.disabled = false;
+      termHint.textContent = 'esc to close';
+      termInput.focus();
+    }
+
+    function closeTerm() {
+      termOverlay.classList.remove('active');
+      termInput.value = '';
+    }
+
+    async function submitTerm() {
+      const password = termInput.value;
+      if (!password) return;
+
+      termInput.disabled = true;
+      termHint.textContent = '…';
+
+      try {
+        const res = await fetch(`${API}/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+
+        if (res.ok) {
+          const { token, username } = await res.json();
+          localStorage.setItem('bouj_token', token);
+          localStorage.setItem('bouj_username', username);
+          window.location.href = 'inner.html';
+        } else {
+          termOverlay.classList.add('shake');
+          setTimeout(() => termOverlay.classList.remove('shake'), 350);
+          termInput.value = '';
+          termInput.disabled = false;
+          termHint.textContent = 'try again';
+          termInput.focus();
+        }
+      } catch {
+        termInput.value = '';
+        termInput.disabled = false;
+        termHint.textContent = 'error — try again';
+        termInput.focus();
+      }
+    }
+
+    // keyboard: ? opens, Escape closes, Enter submits
+    document.addEventListener('keydown', (e) => {
+      if (termOverlay.classList.contains('active')) {
+        if (e.key === 'Escape') closeTerm();
+        if (e.key === 'Enter')  submitTerm();
+      } else {
+        if (e.key === '?') {
+          e.preventDefault();
+          openTerm();
+        }
+      }
+    });
+
+    // mobile: long-press on moon date opens prompt
+    let _longPress = null;
+
+    moonEl.addEventListener('touchstart', (e) => {
+      _longPress = setTimeout(() => {
+        _longPress = null;
+        openTerm();
+      }, 600);
+    }, { passive: true });
+
+    moonEl.addEventListener('touchend',  () => { clearTimeout(_longPress); _longPress = null; });
+    moonEl.addEventListener('touchmove', () => { clearTimeout(_longPress); _longPress = null; });
+
+    // prevent context menu from showing during long-press
+    moonEl.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // lift prompt above keyboard on iOS
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+        termOverlay.style.bottom = Math.max(0, offset) + 'px';
+      });
+    }
   </script>
 </body>
 </html>

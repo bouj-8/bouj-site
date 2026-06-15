@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bouj / inner</title>
+  <style>
+    :root {
+      --bg: #f5f5f0;
+      --fg: #1a1a1a;
+      --muted: #888;
+      --border: #ddd;
+      --toggle-bg: #ddd;
+      --toggle-fg: #333;
+    }
+
+    [data-theme="dark"] {
+      --bg: #111;
+      --fg: #e8e8e0;
+      --muted: #666;
+      --border: #2a2a2a;
+      --toggle-bg: #333;
+      --toggle-fg: #ccc;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* ── layout ── */
+
+    .page {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem 6rem;
+      display: none;
+    }
+
+    .page.ready {
+      display: block;
+    }
+
+    /* ── header ── */
+
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 3rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .site-name {
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .site-name:hover {
+      color: var(--fg);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .username {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    button.small {
+      background: var(--toggle-bg);
+      color: var(--toggle-fg);
+      border: none;
+      border-radius: 2rem;
+      padding: 0.3em 0.7em;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    button.small:hover {
+      opacity: 0.8;
+    }
+
+    /* ── posts ── */
+
+    .post {
+      margin-bottom: 3.5rem;
+    }
+
+    .post + .post {
+      padding-top: 3.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .post-date {
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .post-title {
+      font-size: clamp(1.25rem, 4vw, 1.75rem);
+      font-weight: normal;
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .post-body {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: var(--fg);
+    }
+
+    .post-body p + p {
+      margin-top: 1em;
+    }
+
+    /* ── loading / error ── */
+
+    .loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transition: background-color 0.3s;
+    }
+
+    .loading.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="loading" id="loading">checking…</div>
+
+  <div class="page" id="page">
+    <header>
+      <a class="site-name" href="index.html">← bouj</a>
+      <div class="header-right">
+        <span class="username" id="username"></span>
+        <button class="small" id="theme-toggle">☀ light</button>
+        <button class="small" id="logout">log out</button>
+      </div>
+    </header>
+
+    <main id="posts">
+
+      <!-- posts go here, newest first -->
+
+      <article class="post">
+        <p class="post-date">June 15, 2026</p>
+        <h2 class="post-title">The inner workings</h2>
+        <div class="post-body">
+          <p>This is the beginning of the inner layer — a quieter place to write about what the site is, where it's going, and whatever else comes up along the way.</p>
+          <p>The moon calendar is the public face. This is the back room.</p>
+        </div>
+      </article>
+
+    </main>
+  </div>
+
+  <script>
+    const API = 'https://bouj-backend-production.up.railway.app';
+
+    const loadingEl = document.getElementById('loading');
+    const pageEl    = document.getElementById('page');
+    const usernameEl = document.getElementById('username');
+
+    // ── theme ─────────────────────────────────────────────────────────────────
+
+    const themeToggle = document.getElementById('theme-toggle');
+    const html        = document.documentElement;
+
+    setTheme(localStorage.getItem('theme') || 'dark');
+
+    themeToggle.addEventListener('click', () => {
+      setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    function setTheme(theme) {
+      html.dataset.theme = theme;
+      themeToggle.textContent = theme === 'dark' ? '☾ dark' : '☀ light';
+      localStorage.setItem('theme', theme);
+    }
+
+    // ── auth ──────────────────────────────────────────────────────────────────
+
+    document.getElementById('logout').addEventListener('click', () => {
+      localStorage.removeItem('bouj_token');
+      localStorage.removeItem('bouj_username');
+      window.location.href = 'index.html';
+    });
+
+    async function init() {
+      const token = localStorage.getItem('bouj_token');
+      if (!token) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/me`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        const { username } = await res.json();
+        usernameEl.textContent = username;
+        loadingEl.classList.add('hidden');
+        pageEl.classList.add('ready');
+      } catch {
+        localStorage.removeItem('bouj_token');
+        localStorage.removeItem('bouj_username');
+        window.location.href = 'index.html';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
