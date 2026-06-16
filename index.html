@@ -172,6 +172,25 @@
     const moonEl = document.getElementById('moon-date');
     const subEl  = document.getElementById('sub');
 
+    // ── language (init first — theme toggle text depends on it) ──────────────
+
+    const langToggle = document.getElementById('lang-toggle');
+    let useChinese   = localStorage.getItem('lang') === 'zh';
+
+    updateLangToggle();
+
+    langToggle.addEventListener('click', () => {
+      useChinese = !useChinese;
+      localStorage.setItem('lang', useChinese ? 'zh' : 'en');
+      updateLangToggle();
+      setTheme(html.dataset.theme);
+      if (lastData) render(lastData);
+    });
+
+    function updateLangToggle() {
+      langToggle.textContent = useChinese ? 'eng' : '中文';
+    }
+
     // ── theme ────────────────────────────────────────────────────────────────
 
     const themeToggle = document.getElementById('theme-toggle');
@@ -185,26 +204,10 @@
 
     function setTheme(theme) {
       html.dataset.theme = theme;
-      themeToggle.textContent = theme === 'dark' ? '☾ dark' : '☀ light';
+      themeToggle.textContent = theme === 'dark'
+        ? (useChinese ? '☾ 夜' : '☾ dark')
+        : (useChinese ? '☀ 日' : '☀ light');
       localStorage.setItem('theme', theme);
-    }
-
-    // ── language ─────────────────────────────────────────────────────────────
-
-    const langToggle = document.getElementById('lang-toggle');
-    let useChinese   = localStorage.getItem('lang') === 'zh';
-
-    updateLangToggle();
-
-    langToggle.addEventListener('click', () => {
-      useChinese = !useChinese;
-      localStorage.setItem('lang', useChinese ? 'zh' : 'en');
-      updateLangToggle();
-      if (lastData) render(lastData);
-    });
-
-    function updateLangToggle() {
-      langToggle.textContent = useChinese ? 'eng' : '中文';
     }
 
     const ZH_MONTHS = {
@@ -284,16 +287,16 @@
     }
 
     async function init() {
-      subEl.textContent = 'locating...';
+      subEl.textContent = useChinese ? '定位中…' : 'locating...';
       try {
         const pos  = await getLocation();
         lastData   = await fetchMoon(pos.coords.latitude, pos.coords.longitude);
         render(lastData);
       } catch (err) {
         if (err.code === 1) {
-          renderError('enable location to see your moon date');
+          renderError(useChinese ? '请开启定位' : 'enable location to see your moon date');
         } else {
-          renderError('something went wrong');
+          renderError(useChinese ? '出错了' : 'something went wrong');
         }
       }
     }
