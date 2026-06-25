@@ -325,6 +325,8 @@
     let username = null;
     let editingId = null;
     let postsCache = [];
+    let userLoc = null;
+    const lunarCache = {};
 
     const loadingEl   = document.getElementById('loading');
     const pageEl      = document.getElementById('page');
@@ -386,20 +388,25 @@
       try {
         const res = await fetch(`${API}/posts`, { headers: { Authorization: `Bearer ${token}` } });
         postsCache = await res.json();
-        renderPosts(postsCache);
+        await renderPosts(postsCache);
       } catch {
         postsEl.innerHTML = '<p class="empty">couldn\'t load posts.</p>';
       }
     }
 
-    function renderPosts(posts) {
+    async function renderPosts(posts) {
       if (posts.length === 0) {
         postsEl.innerHTML = '<p class="empty">nothing here yet.</p>';
         return;
       }
-      postsEl.innerHTML = posts.map(post => `
+      const uniqueDates = [...new Set(posts.map(p => p.created_at.slice(0, 10)))];
+      await Promise.all(uniqueDates.map(fetchLunarDate));
+      postsEl.innerHTML = posts.map(post => {
+        const date = post.created_at.slice(0, 10);
+        const dateStr = lunarCache[date] ?? formatDate(post.created_at);
+        return `
         <article class="post">
-          <p class="post-date">${formatDate(post.created_at)}${post.updated_at ? ' · edited' : ''}</p>
+          <p class="post-date">${dateStr}${post.updated_at ? ' · edited' : ''}</p>
           <h2 class="post-title">${escHtml(post.title)}</h2>
           <div class="post-body">${marked.parse(post.body)}</div>
           ${username === 'admin' ? `
@@ -409,11 +416,40 @@
             </div>
           ` : ''}
         </article>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function formatDate(iso) {
       return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    async function getLoc() {
+      if (userLoc) return userLoc;
+      return new Promise(resolve => {
+        if (!navigator.geolocation) { resolve(null); return; }
+        navigator.geolocation.getCurrentPosition(
+          pos => { userLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(userLoc); },
+          () => resolve(null),
+          { timeout: 5000 }
+        );
+      });
+    }
+
+    async function fetchLunarDate(date) {
+      if (date in lunarCache) return;
+      const loc = await getLoc();
+      if (!loc) { lunarCache[date] = null; return; }
+      try {
+        const res = await fetch(`${API}/moon?lat=${loc.lat}&lon=${loc.lon}&date=${date}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        lunarCache[date] = data.is_gate_day
+          ? `${data.gate.closing.display} · ${data.gate.opening.display}`
+          : data.reading.display;
+      } catch {
+        lunarCache[date] = null;
+      }
     }
 
     function escHtml(str) {
