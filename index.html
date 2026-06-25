@@ -290,6 +290,8 @@
       subEl.textContent = useChinese ? '定位中…' : 'locating...';
       try {
         const pos  = await getLocation();
+        localStorage.setItem('bouj_lat', pos.coords.latitude);
+        localStorage.setItem('bouj_lon', pos.coords.longitude);
         lastData   = await fetchMoon(pos.coords.latitude, pos.coords.longitude);
         render(lastData);
       } catch (err) {

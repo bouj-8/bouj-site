@@ -426,10 +426,21 @@
 
     async function getLoc() {
       if (userLoc) return userLoc;
+      const storedLat = localStorage.getItem('bouj_lat');
+      const storedLon = localStorage.getItem('bouj_lon');
+      if (storedLat && storedLon) {
+        userLoc = { lat: parseFloat(storedLat), lon: parseFloat(storedLon) };
+        return userLoc;
+      }
       return new Promise(resolve => {
         if (!navigator.geolocation) { resolve(null); return; }
         navigator.geolocation.getCurrentPosition(
-          pos => { userLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(userLoc); },
+          pos => {
+            userLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+            localStorage.setItem('bouj_lat', userLoc.lat);
+            localStorage.setItem('bouj_lon', userLoc.lon);
+            resolve(userLoc);
+          },
           () => resolve(null),
           { timeout: 5000 }
         );
