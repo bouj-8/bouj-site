@@ -286,6 +286,9 @@
     }
 
     .loading.hidden { display: none; }
+
+    .page.previewing #write-btn,
+    .page.previewing .post-controls { display: none !important; }
   </style>
 </head>
 <body>
@@ -298,6 +301,8 @@
       <div class="header-right">
         <span class="username" id="username"></span>
         <button class="small" id="write-btn" onclick="openEditor()">write</button>
+        <button class="small" id="preview-btn" style="display:none" onclick="togglePreview()">preview</button>
+        <button class="small" id="lang-toggle">中文</button>
         <button class="small" id="theme-toggle">☀ light</button>
         <button class="small" id="logout">log out</button>
       </div>
@@ -327,6 +332,7 @@
     let postsCache = [];
     let userLoc = null;
     const lunarCache = {};
+    let useChinese = localStorage.getItem('lang') === 'zh';
 
     const loadingEl   = document.getElementById('loading');
     const pageEl      = document.getElementById('page');
@@ -336,6 +342,48 @@
     const previewEl   = document.getElementById('editor-preview');
     const publishBtn  = document.getElementById('publish-btn');
     const postsEl     = document.getElementById('posts-container');
+
+    // ── language ──────────────────────────────────────────────────────────────
+
+    const langToggle = document.getElementById('lang-toggle');
+    langToggle.textContent = useChinese ? 'eng' : '中文';
+    langToggle.addEventListener('click', () => {
+      useChinese = !useChinese;
+      localStorage.setItem('lang', useChinese ? 'zh' : 'en');
+      langToggle.textContent = useChinese ? 'eng' : '中文';
+      renderPosts(postsCache);
+    });
+
+    const ZH_MONTHS = {
+      1: '正月', 2: '二月', 3: '三月', 4: '四月',
+      5: '五月', 6: '六月', 7: '七月', 8: '八月',
+      9: '九月', 10: '十月', 11: '十一月', 12: '十二月',
+    };
+
+    const ZH_DAYS = [
+      '', '初一', '初二', '初三', '初四', '初五',
+      '初六', '初七', '初八', '初九', '初十',
+      '十一', '十二', '十三', '十四', '十五',
+      '十六', '十七', '十八', '十九', '二十',
+      '廿一', '廿二', '廿三', '廿四', '廿五',
+      '廿六', '廿七', '廿八', '廿九', '三十',
+    ];
+
+    function zhReading(month, is_leap, day) {
+      return (is_leap ? '闰' : '') + ZH_MONTHS[month] + ZH_DAYS[day];
+    }
+
+    function formatLunarDateStr(data) {
+      if (data.is_gate_day) {
+        const { closing, opening } = data.gate;
+        return useChinese
+          ? zhReading(closing.month, closing.is_leap, closing.day) + ' · ' + zhReading(opening.month, opening.is_leap, opening.day)
+          : closing.display + ' · ' + opening.display;
+      }
+      return useChinese
+        ? zhReading(data.reading.month, data.reading.is_leap, data.reading.day)
+        : data.reading.display;
+    }
 
     // ── theme ─────────────────────────────────────────────────────────────────
 
@@ -375,7 +423,10 @@
       }
 
       document.getElementById('username').textContent = username;
-      if (username === 'admin') document.getElementById('write-btn').style.display = 'inline-block';
+      if (username === 'admin') {
+        document.getElementById('write-btn').style.display = 'inline-block';
+        document.getElementById('preview-btn').style.display = 'inline-block';
+      }
 
       loadingEl.classList.add('hidden');
       pageEl.classList.add('ready');
@@ -383,6 +434,12 @@
     }
 
     // ── posts ─────────────────────────────────────────────────────────────────
+
+    function togglePreview() {
+      const btn = document.getElementById('preview-btn');
+      const previewing = pageEl.classList.toggle('previewing');
+      btn.textContent = previewing ? 'editing' : 'preview';
+    }
 
     async function fetchPosts() {
       try {
@@ -403,7 +460,8 @@
       await Promise.all(uniqueDates.map(fetchLunarDate));
       postsEl.innerHTML = posts.map(post => {
         const date = post.created_at.slice(0, 10);
-        const dateStr = lunarCache[date] ?? formatDate(post.created_at);
+        const moonData = lunarCache[date];
+        const dateStr = moonData ? formatLunarDateStr(moonData) : formatDate(post.created_at);
         return `
         <article class="post">
           <p class="post-date">${dateStr}${post.updated_at ? ' · edited' : ''}</p>
@@ -454,10 +512,7 @@
       try {
         const res = await fetch(`${API}/moon?lat=${loc.lat}&lon=${loc.lon}&date=${date}`);
         if (!res.ok) throw new Error();
-        const data = await res.json();
-        lunarCache[date] = data.is_gate_day
-          ? `${data.gate.closing.display} · ${data.gate.opening.display}`
-          : data.reading.display;
+        lunarCache[date] = await res.json();
       } catch {
         lunarCache[date] = null;
       }
